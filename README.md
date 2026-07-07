@@ -64,3 +64,6 @@ Dashboard Design
 Data Visualization
 Business Analytics
 Problem Solving
+
+## Dashbords
+https://github.com/aryanraut294-maker/Pizza-Sales-/blob/main/Pizza%201.png
