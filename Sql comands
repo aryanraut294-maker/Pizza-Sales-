@@ -1,0 +1,161 @@
+use my_pizza_db;
+
+-- 1 Total order 
+SELECT COUNT(*) 
+FROM orders;
+
+-- 2 Total revenue 
+select sum(p.price * od.quantity ) as revenue 
+from pizzas p  
+join order_details od 
+on p.pizza_id = od.pizza_id;
+
+-- 3 Total pizza sold 
+select sum(quantity) as Total_pizza_sold 
+from order_details;
+
+-- 4 Average order value
+select sum(od.quantity* p.price )/count(distinct od.order_id) as Average_order_value
+from order_details od 
+join pizzas p 
+on od. pizza_id = p.pizza_id;
+
+-- 5 Top 10 selling pizzas 
+select pt.name,sum(od.quantity) as pizza_sold
+from order_details od
+join pizzas p 
+on od.pizza_id = p.pizza_id
+join pizza_types pt 
+on p.pizza_type_id = pt.pizza_type_id
+group by pt.name
+order by pizza_sold desc
+limit 10 ; 
+
+-- 6 Higest revenue pizza 
+select pt.name , sum(p.price * od.quantity ) as revenue 
+from pizzas p  
+join order_details od 
+on p.pizza_id = od.pizza_id
+join pizza_types pt
+on p.pizza_type_id = pt.pizza_type_id
+group by pt.name
+order by revenue desc;
+
+-- 7 Sale by category
+select pt.category , sum(od.quantity) as Total_pizza_sold 
+from order_details od 
+join pizzas p 
+on od. pizza_id = p.pizza_id
+join pizza_types pt
+on p.pizza_type_id = pt.pizza_type_id 
+group by pt.category
+order by total_pizza_sold;
+
+-- 8 Sales by pizza size 
+select p.size , sum(od.quantity) as Total_pizza_sold 
+from order_details od 
+join pizzas p 
+on od. pizza_id = p.pizza_id
+group by p.size
+order by total_pizza_sold;
+
+-- 9 Peak order hours 
+SELECT
+    DATE_FORMAT(o.order_time,'%h %p') AS order_hour,
+    COUNT(DISTINCT o.order_id) AS total_orders
+FROM orders o
+GROUP BY DATE_FORMAT(o.order_time,'%h %p')
+ORDER BY total_orders DESC;
+
+-- 10 Monthly revenue trend
+SELECT MONTHNAME(o.order_date) AS month,
+       SUM(od.quantity * p.price) AS revenue
+FROM orders o
+JOIN order_details od
+ON o.order_id = od.order_id
+JOIN pizzas p
+ON od.pizza_id = p.pizza_id
+GROUP BY MONTH(o.order_date),
+         MONTHNAME(o.order_date)
+ORDER BY MONTH(o.order_date);
+
+-- 11  comulative revenue over time 
+SELECT
+    t.order_date,
+    t.daily_revenue,
+    SUM(t.daily_revenue) OVER(
+        ORDER BY t.order_date
+    ) AS cumulative_revenue
+FROM (
+    SELECT
+        o.order_date,
+        SUM(p.price * od.quantity) AS daily_revenue
+    FROM orders o
+    JOIN order_details od
+    ON o.order_id = od.order_id
+    JOIN pizzas p
+    ON od.pizza_id = p.pizza_id
+    GROUP BY o.order_date
+) t
+ORDER BY t.order_date;
+
+-- 12 Daly sales trend 
+SELECT o.order_date,
+       SUM(od.quantity * p.price) AS revenue
+FROM orders o
+JOIN order_details od
+ON o.order_id = od.order_id
+JOIN pizzas p
+ON od.pizza_id = p.pizza_id
+GROUP BY o.order_date
+ORDER BY revenue desc;
+
+
+-- 13 persantage contrubation of category 
+SELECT 
+    pt.category,
+    ROUND(
+        SUM(p.price * od.quantity) * 100 /
+        (SELECT SUM(p2.price * od2.quantity)
+         FROM order_details od2
+         JOIN pizzas p2
+         ON od2.pizza_id = p2.pizza_id),
+    2) AS revenue_percentage
+FROM order_details od
+JOIN pizzas p
+ON od.pizza_id = p.pizza_id
+JOIN pizza_types pt
+ON p.pizza_type_id = pt.pizza_type_id
+GROUP BY pt.category
+ORDER BY revenue_percentage DESC;
+
+-- 14 Top 3 pizza in each catogary 
+WITH pizza_revenue AS (
+    SELECT
+        pt.category,
+        pt.name,
+        SUM(p.price * od.quantity) AS revenue
+    FROM order_details od
+    JOIN pizzas p
+    ON od.pizza_id = p.pizza_id
+    JOIN pizza_types pt
+    ON p.pizza_type_id = pt.pizza_type_id
+    GROUP BY pt.category, pt.name
+),
+
+ranked_pizza AS (
+    SELECT *,
+           RANK() OVER(
+               PARTITION BY category
+               ORDER BY revenue DESC
+           ) AS ranking
+    FROM pizza_revenue
+)
+
+SELECT
+    category,
+    name,
+    revenue
+FROM ranked_pizza
+WHERE ranking <= 3
+ORDER BY category, revenue DESC;
