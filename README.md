@@ -67,3 +67,5 @@ Problem Solving
 
 ## Dashbords
 https://github.com/aryanraut294-maker/Pizza-Sales-/blob/main/Pizza%201.png
+
+https://github.com/aryanraut294-maker/Pizza-Sales-/blob/main/Pizza%202.png
